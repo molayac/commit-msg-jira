@@ -1,0 +1,170 @@
+#!/usr/bin/python
+#
+# A hook script to check the commit message and get data to send 
+# and create worklog on JIRA.
+# Called by "git commit" with one argument, the name of the file
+# that has the commit message.  The hook should exit with zero 
+# if JIRA DATA is not on commit message and make the commit normal. 
+# if exist, validate the format and exit with non-zero if can't 
+# parse the JIRA DATA.
+# JIRA DATA FORMAT:
+# git commit -am "MY MESSAGE {time=5h 30m,issue=JIRA-93}"
+# The hook is allowed to edit the commit message file.
+# non-zero exit cause ABORT COMMIT
+# zero exit cause COMMIT SUCCESSFULL
+
+import sys, re, configparser
+from jira import JIRA, JIRAError
+from datetime import datetime
+from tzlocal import get_localzone
+
+#Required parts 
+FILE_PATH = ".git/hooks/jira.conf"
+Config = configparser.ConfigParser()
+tz = get_localzone()
+
+def main():
+	#Get the commit file
+	commitMessageFile = open(sys.argv[1]) #The first argument is the file
+	worklogToSend = getWorklog( commitMessageFile.read().strip() )
+	commitMessageFile.close()
+	# print(worklogToSend)
+	commitMessageFile = open(sys.argv[1], "w")
+	commitMessage = worklogToSend['comment']
+
+	if isWritedWorklog(worklogToSend) :
+		# print(commitMessage)
+		sections = getJIRASections()
+		print(sections)
+		for section in sections:
+			createWorklogSafe(section, worklogToSend)
+		commitMessageFile.write(commitMessage)
+		commitMessageFile.close()
+		sys.exit(0)
+	else: 
+		print ("Nothing to do on JIRA! FORMAT= {time=2h 30m, issue=JIRA_93}")
+		commitMessageFile.write(commitMessage)
+		commitMessageFile.close()
+		sys.exit(0)
+
+def getJIRASections():
+	#Read File to get configurations
+	Config.read(FILE_PATH)
+	return Config.sections()
+
+def getJIRAConfigurations(section):
+	#Return configurations by section
+	configurations = {}
+	options = Config.options(section)
+	for option in options:
+		try:
+			configurations[option] = Config.get(section, option)
+			if configurations[option] == -1:
+				print("skip: ", option)
+		except:
+			print("Exception on %s!" % option)
+			configurations[option] = None
+	print("JIRA '"+ section +"' Host: ", configurations['host'])
+	return configurations
+
+
+def createWorklogSafe(section, worklogToSend):
+	#Create a Worklog if the connection is established
+	jira = getJiraConnection(section, worklogToSend)
+	try:
+		issue = jira.issue(worklogToSend['issue'])
+		print("Worklog Generated on JIRA ["+issue.key+"]: ", worklogToSend)
+		worklogAdded = jira.add_worklog(issue=issue, timeSpent=worklogToSend['time_spent'], comment=worklogToSend['comment'], started=worklogToSend['start_date'])
+		print("Worklog Generated on JIRA ["+section+"]: ", worklogAdded)
+	except JIRAError as e:
+		print(e.status_code, e.text)
+		print("JIRA Issue: ", worklogToSend['issue'], " Does Not Exist!, please verify and try again.")
+		print("\033[93m*** YOUR COMMIT WAS ABORTED!!! ***\033[0m")
+		sys.exit(1)	
+	# print(issue.fields.summary)
+	
+def getJiraConnection(section, worklogToSend):
+	configurations = getJIRAConfigurations(section)
+	try:
+		jira = JIRA(configurations['host'], basic_auth=(configurations['user'], configurations['pass']))
+	except JIRAError as e:
+		print(e.status_code, e.text)
+		print("There was an error with JIRA "+section+" configurations")
+		print("JIRA Worklog on Issue: ", worklogToSend['issue'], " Was Not Created!, please verify and try again.")
+		print("*** YOUR COMMIT WAS ABORTED!!! ***")
+		sys.exit(1)	
+	return jira
+
+def between(value, a, b, r=True):
+	# Find and validate before-part.
+	pos_a = value.find(a)
+	
+	if pos_a == -1: 
+		return ""
+	# Find and validate after part.
+	pos_b = value.rfind(b)
+
+	if not r:
+		pos_b = value.find(b)
+
+	if pos_b == -1:
+		return ""
+	
+	# Return middle part.
+	adjusted_pos_a = pos_a + len(a)
+	if adjusted_pos_a >= pos_b:
+		return ""
+	return value[adjusted_pos_a:pos_b]
+
+def before(value, a):
+    # Find first part and return slice before it.
+    pos_a = value.find(a)
+    if pos_a == -1: return ""
+    return value[0:pos_a]
+
+def after(value, a):
+    # Find and validate first part.
+    pos_a = value.rfind(a)
+    if pos_a == -1: return ""
+    # Returns chars after the found string.
+    adjusted_pos_a = pos_a + len(a)
+    if adjusted_pos_a >= len(value): return ""
+    return value[adjusted_pos_a:]
+
+def getWorklog(commit):
+	#Return worklog from commit
+	date = between(commit, "date=", ",")
+	time_spent =  between(commit, "time=", ",", False)
+	issue = between(commit, "issue=", "}")
+	comment = before(commit, "{")
+	print(time_spent," PRUEBA")
+	return {
+		'time_spent' : time_spent,
+		'issue' : issue,
+		'comment': comment,
+		'start_date': convertDate(date)
+	}
+
+def convertDate(date):
+	if( len(date) > 0 ):
+		try:
+			start_date =  tz.localize(datetime.strptime(date, '%Y-%m-%d %H:%M%p'))
+			return start_date
+		except ValueError as e:
+			print('Can not parse date to format date:', date)
+			try: 
+				start_date =  datetime.strptime(date, '%Y-%m-%d %H:%M%p')
+			except ValueError as e:
+				print('Can not parse date to format again')
+			sys.exit(1)
+	return None
+	
+def isWritedWorklog(worklog):
+	#Validate if worklog has issue and time specified
+	existTimeSpent = len(worklog['time_spent']) > 0
+	existIssue = len(worklog['issue']) > 0
+	existComment =  len(worklog['comment']) > 0
+	return  existTimeSpent and existIssue  and existComment
+
+
+main()
