@@ -57,7 +57,7 @@ Además debe realizar el siguiente proceso:
 ```sh
 $ cd commit-msg-jira
 $ pip install -r requirements.txt --user
-$ python setup.py install
+$ python setup.py install --user
 ```
 
 Luego debe renombrar en **.git/hooks/commit-msg.sample** a **.git/hooks/commit-msg**
