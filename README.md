@@ -56,6 +56,7 @@ Como ya se mencionó, requiere tener instalado **Python V3**
 Además debe realizar el siguiente proceso:
 ```sh
 $ cd commit-msg-jira
+$ pip install -r requirements.txt --user
 $ python setup.py install
 ```
 
@@ -77,23 +78,12 @@ PASS= password
 ```
 
 #### Utilizando el código fuente
-Se puede utilizar el archivo **commit-msg** y el archivo de configuracion **jira.conf** ubicados en la raíz del proyecto y en la carpeta **conf** respectivamente.
-Copiar ambos archivos y pegarlos dentro de la carpeta **.git/hooks** de cada proyecto donde lo necesite. y modifique el archivo **jira.conf** con los datos requeridos.
+Puede utilizar los archivos **commit-msg** y **jira.conf** ubicados en la raíz del proyecto y en la carpeta **conf** respectivamente.
+Copiar ambos archivos y pegarlos dentro de la carpeta **.git/hooks** de cada proyecto donde vaya a usar estas funcionalidades.
 
-Si se presenta algún error al ejecutar el commit, y si no realizó el comando:
+No olvide modificar el archivo **jira.conf** con los datos requeridos.
 
-```sh
-$ python setup.py install
-```
-
-Es posible que deba ejecutar estos comandos para que funcione correctamente:
-
-```sh
-$ pip install tzlocal
-$ pip install configparser
-$ pip install jira
-```
-### Todos
+### Por Hacer
 
  - Crear script de auto instalación en proyectos especificados.
  

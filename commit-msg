@@ -1,5 +1,4 @@
-#!/usr/bin/python
-#
+#!/usr/bin/env python
 # A hook script to check the commit message and get data to send 
 # and create worklog on JIRA.
 # Called by "git commit" with one argument, the name of the file
