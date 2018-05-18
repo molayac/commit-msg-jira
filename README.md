@@ -101,6 +101,7 @@ No olvide modificar el archivo **jira.conf** con los datos requeridos.
 ### Por Hacer
 
  - Crear script de auto instalación en proyectos especificados.
+ - Agregar varios JIRA y permitir ingresar issues para cada uno.
  
 License
 ----
