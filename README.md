@@ -52,16 +52,17 @@ $ git commit -m "AGREGANDO SUPER FUNCIONALIDAD ALPHA"
 ---
 # Instalación
 
-Como ya se mencionó, requiere tener instalado **Python V3**
+Como ya se mencionó, requiere tener instalado **Python V3**, y para usarlo un proyecto que ya haya sido iniciado con GIT.
 Además debe realizar el siguiente proceso:
 ```sh
 $ cd commit-msg-jira
 $ pip install -r requirements.txt --user
 $ python setup.py install --user
 ```
+**Ahora vamos a la carpeta de nuestro proyecto donde queremos hacer uso de este script: cd /home/user/mi-proyecto/**
 
-Luego debe renombrar en **.git/hooks/commit-msg.sample** a **.git/hooks/commit-msg**
-Y en cambiar todo el contenido del archivo por: 
+Renombramos el archivo **.git/hooks/commit-msg.sample** a **.git/hooks/commit-msg**
+Y todo el contenido del archivo lo reemplazamos con: 
 ```sh
 #!/bin/sh
 commit-msg $1
@@ -76,6 +77,20 @@ HOST= https://jira.com/jira
 USER= username
 PASS= password
 ```
+
+Las rutas de archivos en el proyecto deben quedar asi:
+```sh
+mi-proyecto/
+|__.git/
+    |___hooks/
+            ...
+        |___jira.conf
+        |___commit-msg
+            ...
+|___src
+|___README.md
+```
+
 
 #### Utilizando el código fuente
 Puede utilizar los archivos **commit-msg** y **jira.conf** ubicados en la raíz del proyecto y en la carpeta **conf** respectivamente.
